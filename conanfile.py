@@ -28,9 +28,8 @@ class ArmadilloConan(ConanFile):
 
     def build(self):
         cmake = CMake(self)
-        self.run('cmake %s/armadillo-8.300.0 %s' % (self.conanfile_directory,
-                                                    cmake.command_line))
-        self.run('cmake --build .')
+        cmake.configure(source_dir="sources")
+        cmake.build()
 
     def package(self):
         self.copy('armadillo', dst='include', src='armadillo-8.300.0/include')
