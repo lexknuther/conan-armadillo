@@ -1,22 +1,30 @@
-from conans import CMake, ConanFile
+from conans import CMake, ConanFile, tools
+import os
 
 
 class ArmadilloConan(ConanFile):
-    name = 'armadillo'
-    version = '8.3'
-    license = 'Apache License 2.0'
-    url = '<Package recipe repository url here, for issues about the package>'
-    description = 'C++ linear algebra library'
-    settings = 'os', 'compiler', 'build_type', 'arch'
-    options = {'shared': [True, False]}
-    default_options = 'shared=True'
-    generators = 'cmake'
+    name = "Armadillo"
+    version = "8.300.0"
+    license = "Apache License 2.0"
+    url = "<Package recipe repository url here, for issues about the package>"
+    description = "C++ linear algebra library"
+    settings = "os", "compiler", "build_type", "arch"
+    options = {"shared": [True, False], "ARMA_USE_LAPACK": [True, False], "ARMA_USE_BLAS":[True, False]}
+    default_options = "shared=False", "ARMA_USE_LAPACK=False", "ARMA_USE_BLAS=False"
+    generators = "cmake"
+    requires = "7z_installer/1.0@conan/stable"
+    source_folder_name = ("armadillo-%s" % version)
+    source_tarxz_file = ("%s.tar.xz" % source_folder_name)
+    source_tar_file = ("%s.tar" % source_folder_name)
 
     def source(self):
-        self.run(
-            'curl -OL http://sourceforge.net/projects/arma/files/armadillo-8.300.0.tar.xz'
-        )
-        self.run('tar -xvf armadillo-8.300.0.tar.xz')
+        tools.download(
+            ("http://sourceforge.net/projects/arma/files/%s" % self.source_tarxz_file), self.source_tarxz_file)
+        self.run("7z x %s" % self.source_tarxz_file)
+        self.run("7z x %s" % self.source_tar_file)
+        os.unlink(self.source_tarxz_file)
+        os.unlink(self.source_tar_file)
+        os.rename(self.source_folder_name, "sources")
 
     def build(self):
         cmake = CMake(self)
@@ -36,4 +44,4 @@ class ArmadilloConan(ConanFile):
         self.copy('*.dylib', dst='lib', keep_path=False)
 
     def package_info(self):
-        self.cpp_info.libs = ['armadillo']
+        self.cpp_info.libs = ["armadillo"]
