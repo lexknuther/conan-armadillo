@@ -27,6 +27,14 @@ class ArmadilloConan(ConanFile):
         os.rename(self.source_folder_name, "sources")
 
     def build(self):
+        if not self.options.ARMA_USE_LAPACK:
+            tools.replace_in_file(
+                file_path="sources/include/armadillo_bits/config.hpp", search="#define ARMA_USE_LAPACK", replace="//#define ARMA_USE_LAPACK")
+
+        if not self.options.ARMA_USE_BLAS:
+            tools.replace_in_file(
+                file_path="sources/include/armadillo_bits/config.hpp", search="#define ARMA_USE_BLAS", replace="//#define ARMA_USE_BLAS")
+
         cmake = CMake(self)
         cmake.configure(source_dir="sources")
         cmake.build()
