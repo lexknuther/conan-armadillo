@@ -32,15 +32,14 @@ class ArmadilloConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy('armadillo', dst='include', src='armadillo-8.300.0/include')
-        self.copy(
-            '*.hpp',
-            dst='include/armadillo_bits',
-            src='armadillo-8.300.0/include/armadillo_bits')
-        self.copy('*.so', dst='lib', keep_path=False)
-        self.copy('*.so.*', dst='lib', keep_path=False)
-        self.copy('*.a', dst='lib', keep_path=False)
-        self.copy('*.dylib', dst='lib', keep_path=False)
+        self.copy("armadillo", dst="include", src="sources/include")
+        self.copy("*.hpp", dst="include/armadillo_bits", src="sources/include/armadillo_bits")
+        self.copy("*armadillo.dll", dst="bin", keep_path=False)
+        self.copy("*armadillo.lib", dst="lib", keep_path=False)
+        self.copy("*.so", dst="lib", keep_path=False)
+        self.copy("*.so.*", dst="lib", keep_path=False)
+        self.copy("*.a", dst="lib", keep_path=False)
+        self.copy("*.dylib", dst="lib", keep_path=False)
 
     def package_info(self):
         self.cpp_info.libs = ["armadillo"]
