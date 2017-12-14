@@ -29,11 +29,11 @@ class ArmadilloConan(ConanFile):
         if self.settings.os == "Windows":
             self.run("7z x %s" % self.source_tarxz_file)
             self.run("7z x %s" % self.source_tar_file)
+            os.unlink(self.source_tar_file)
         else:
             self.run("tar -xvf %s" % self.source_tarxz_file)
 
         os.unlink(self.source_tarxz_file)
-        os.unlink(self.source_tar_file)
         os.rename(self.source_folder_name, "sources")
 
     def build(self):
