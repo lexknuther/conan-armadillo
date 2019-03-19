@@ -4,7 +4,7 @@ import os
 
 class ArmadilloConan(ConanFile):
     name = "Armadillo"
-    version = "8.300.0"
+    version = "9.200.8"
     license = "Apache License 2.0"
     url = "<Package recipe repository url here, for issues about the package>"
     description = "C++ linear algebra library"
