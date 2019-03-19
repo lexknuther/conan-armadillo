@@ -12,11 +12,14 @@ class ArmadilloConan(ConanFile):
     options = {"shared": [True, False],
                "ARMA_USE_LAPACK": [True, False],
                "ARMA_USE_BLAS": [True, False]}
-    default_options = "shared=False", "ARMA_USE_LAPACK=False", "ARMA_USE_BLAS=False"
+    default_options = "shared=True", "ARMA_USE_LAPACK=True", "ARMA_USE_BLAS=True"
     generators = "cmake"
     source_folder_name = ("armadillo-%s" % version)
     source_tarxz_file = ("%s.tar.xz" % source_folder_name)
     source_tar_file = ("%s.tar" % source_folder_name)
+    requires = (
+        "openblas/0.3.5@nrl/stable"
+    )
 
     def build_requirements(self):
         if self.settings.os == "Windows":
