@@ -12,7 +12,7 @@ class ArmadilloConan(ConanFile):
     options = {"shared": [True, False],
                "ARMA_USE_LAPACK": [True, False],
                "ARMA_USE_BLAS": [True, False]}
-    default_options = "shared=True", "ARMA_USE_LAPACK=True", "ARMA_USE_BLAS=True"
+    default_options = "shared=True", "ARMA_USE_LAPACK=True", "ARMA_USE_BLAS=True", "openblas:TARGET=SANDYBRIDGE"
     generators = "cmake"
     source_folder_name = ("armadillo-%s" % version)
     source_tarxz_file = ("%s.tar.xz" % source_folder_name)

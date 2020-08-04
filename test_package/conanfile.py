@@ -11,14 +11,6 @@ class ArmadilloTestConan(ConanFile):
         cmake.configure()
         cmake.build()
 
-    def imports(self):
-        self.copy("*armadillo.dll", dst="bin", src="bin")
-        self.copy("*blas.dll", dst="bin", src="bin")
-        self.copy("*armadillo.dylib*", dst="bin", src="lib")
-        self.copy("*blas.dylib*", dst="bin", src="lib")
-        self.copy("*armadillo.so*", dst="bin", src="lib")
-        self.copy("*blas.so*", dst="bin", src="lib")
-
     def test(self):
         os.chdir("bin")
         self.run(".%sexample" % os.sep)
