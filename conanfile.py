@@ -9,21 +9,33 @@ class ArmadilloConan(ConanFile):
     url = "<Package recipe repository url here, for issues about the package>"
     description = "C++ linear algebra library"
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False],
-               "ARMA_USE_LAPACK": [True, False],
-               "ARMA_USE_BLAS": [True, False]}
-    default_options = "shared=True", "ARMA_USE_LAPACK=True", "ARMA_USE_BLAS=True", "openblas:TARGET=HASWELL"
-    generators = "cmake"
+    options = {
+        "shared": [True, False],
+        "BLAS": [True, False],
+        "OpenBLAS": [True, False],
+        "MKL": [True, False],
+        "ATLAS": [True, False],
+        "ACML": [True, False],
+        "ACMLMP": [True, False],
+        "LAPACK": [True, False],
+        "BUILD_SMOKE_TEST": [True, False]
+    }
+    default_options = "shared=True", "BLAS=False", "OpenBLAS=True", "MKL=False", "ACML=False", "ACMLMP=False", \
+                      "LAPACK=False", "BUILD_SMOKE_TEST=True", "ATLAS=False", "openblas:TARGET=HASWELL"
+    generators = "cmake", "cmake_paths"
     source_folder_name = ("armadillo-%s" % version)
     source_tarxz_file = ("%s.tar.xz" % source_folder_name)
     source_tar_file = ("%s.tar" % source_folder_name)
-    requires = (
-        "openblas/0.3.10@nrl/stable"
-    )
+    requires = ()
+    exports_sources = "CMakeLists.txt.patch"
 
     def build_requirements(self):
         if self.settings.os == "Windows":
             self.build_requires("7z_installer/1.0@conan/stable")
+
+    def requirements(self):
+        if self.options.OpenBLAS:
+            self.requires("openblas/0.3.10@nrl/stable")
 
     def source(self):
         tools.download(("http://sourceforge.net/projects/arma/files/%s" % self.source_tarxz_file),
@@ -35,24 +47,20 @@ class ArmadilloConan(ConanFile):
             os.unlink(self.source_tar_file)
         else:
             self.run("tar -xvf %s" % self.source_tarxz_file)
-
         os.unlink(self.source_tarxz_file)
         os.rename(self.source_folder_name, "sources")
+        tools.patch(base_path="sources", patch_file="CMakeLists.txt.patch")
 
     def build(self):
-        if not self.options.ARMA_USE_LAPACK:
-            tools.replace_in_file(file_path="sources/include/armadillo_bits/config.hpp",
-                                  search="#define ARMA_USE_LAPACK",
-                                  replace="//#define ARMA_USE_LAPACK")
-
-        if not self.options.ARMA_USE_BLAS:
-            tools.replace_in_file(file_path="sources/include/armadillo_bits/config.hpp",
-                                  search="#define ARMA_USE_BLAS",
-                                  replace="//#define ARMA_USE_BLAS")
-
         cmake = CMake(self)
+        for (key, value) in list(self.options.items()):
+            if key not in ("shared", "BUILD_SMOKE_TESTS"):
+                cmake.definitions["USE_{}".format(key)] = "ON" if value == "True" else "OFF"
+        cmake.definitions["BUILD_SMOKE_TESTS"] = "ON" if self.options["BUILD_SMOKE_TESTS"] else "OFF"
         cmake.configure(source_dir="sources")
         cmake.build()
+        cmake.install()
+        cmake.patch_config_paths()
 
     def package(self):
         self.copy("armadillo", dst="include", src="sources/include")

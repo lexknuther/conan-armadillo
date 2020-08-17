@@ -1,0 +1,305 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5ac2eba..c5f533e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -29,6 +29,7 @@
+ 
+ cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+ 
++include("../conan_paths.cmake")
+ if(NOT (${CMAKE_MAJOR_VERSION} LESS 3))
+   if(POLICY CMP0025)
+     # enable differentiation between vanilla Clang and AppleClang
+@@ -147,6 +148,12 @@ option(BUILD_SMOKE_TEST "Build a smoke test" OFF)
+ ## cmake -D BUILD_SMOKE_TEST=true .
+ ## make
+ ## ctest
++option(USE_MKL "Use Intel Math Kernel Library" OFF)
++option(USE_ACML "Use AMD Core Math Library" OFF)
++option(USE_ACMLMP "Use Intel Math Kernel Library" OFF)
++option(USE_BLAS "Use Blas" OFF)
++option(USE_ATLAS "Use Atlas" OFF)
++option(USE_OpenBLAS "Use OpenBLAS" OFF)
+ 
+ 
+ if(WIN32)
+@@ -186,13 +193,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake_au
+ 
+ if(APPLE)
+   message(STATUS "Detected macOS")
+-  
++
+   set(ARMA_OS macos)
+-  
++
+   set(ARMA_USE_LAPACK     true)
+   set(ARMA_USE_BLAS       true)
+   set(ARMA_USE_ACCELERATE true)
+-  
++
+   if(ALLOW_OPENBLAS_MACOS)
+     include(ARMA_FindOpenBLAS)
+     message(STATUS "OpenBLAS_FOUND = ${OpenBLAS_FOUND}")
+@@ -201,13 +208,13 @@ if(APPLE)
+     message(STATUS "*** rerun cmake with detection of OpenBLAS disabled:")
+     message(STATUS "*** cmake -D ALLOW_OPENBLAS_MACOS=false .")
+     message(STATUS "")
+-    
++
+     if(OpenBLAS_FOUND)
+       set(ARMA_LIBS ${ARMA_LIBS} ${OpenBLAS_LIBRARIES})
+       set(ARMA_USE_ACCELERATE false)
+     endif()
+   endif()
+-  
++
+   if(ALLOW_BLAS_LAPACK_MACOS)
+     include(ARMA_FindBLAS)
+     include(ARMA_FindLAPACK)
+@@ -218,25 +225,25 @@ if(APPLE)
+     message(STATUS "*** rerun cmake with detection of BLAS and LAPACK disabled:")
+     message(STATUS "*** cmake -D ALLOW_BLAS_LAPACK_MACOS=false .")
+     message(STATUS "")
+-    
++
+     if(BLAS_FOUND AND LAPACK_FOUND)
+       set(ARMA_LIBS ${ARMA_LIBS} ${BLAS_LIBRARIES})
+       set(ARMA_LIBS ${ARMA_LIBS} ${LAPACK_LIBRARIES})
+       set(ARMA_USE_ACCELERATE false)
+     endif()
+   endif()
+-  
++
+   if(ARMA_USE_ACCELERATE)
+     set(ARMA_LIBS ${ARMA_LIBS} "-framework Accelerate")  # or "-framework accelerate" ?
+     message(STATUS "Added '-framework Accelerate' to compiler flags")
+   endif()
+-  
++
+   if(DEFINED CMAKE_CXX_COMPILER_ID)
+     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+       message(STATUS "Detected Clang compiler on macOS. Added '-stdlib=libc++' to compiler flags")
+     endif()
+-    
++
+     if(NOT (${CMAKE_MAJOR_VERSION} LESS 3))
+       if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+@@ -244,13 +251,13 @@ if(APPLE)
+       endif()
+     endif()
+   endif()
+-  
++
+   set(CMAKE_MACOSX_RPATH 1)
+-  
++
+ else()
+-  
++
+   set(ARMA_OS unix)
+-  
++
+   include(ARMA_FindMKL)
+   include(ARMA_FindACMLMP)
+   include(ARMA_FindACML)
+@@ -258,7 +265,29 @@ else()
+   include(ARMA_FindATLAS)
+   include(ARMA_FindBLAS)
+   include(ARMA_FindLAPACK)
+-  
++
++  if(NOT MKL_FOUND AND USE_MKL)
++    MESSAGE(FATAL_ERROR "MKL requested but not found.")
++  endif()
++  if(NOT ACML_FOUND AND USE_ACML)
++    MESSAGE(FATAL_ERROR "AMD Core Math Library requested but not found.")
++  endif()
++  if(NOT ACMLMP_FOUND AND USE_ACMLMP)
++    MESSAGE(FATAL_ERROR "AMD Core Math Library MP requested but not found.")
++  endif()
++  if(NOT OpenBLAS_FOUND AND USE_OpenBLAS)
++    MESSAGE(FATAL_ERROR "OpenBLAS requested but not found.")
++  endif()
++  if(NOT ATLAS_FOUND AND USE_ATLAS)
++    MESSAGE(FATAL_ERROR "Atlas requested but not found.")
++  endif()
++  if(NOT LAPACK_FOUND AND USE_LAPACK)
++    MESSAGE(FATAL_ERROR "Atlas requested but not found.")
++  endif()
++  if(NOT BLAS_FOUND AND USE_BLAS)
++    MESSAGE(FATAL_ERROR "Atlas requested but not found.")
++  endif()
++  message(STATUS "OpenBLAS libraries: ${OpenBLAS_LIBRARIES}")
+   message(STATUS "     MKL_FOUND = ${MKL_FOUND}"     )
+   message(STATUS "  ACMLMP_FOUND = ${ACMLMP_FOUND}"  )
+   message(STATUS "    ACML_FOUND = ${ACML_FOUND}"    )
+@@ -266,12 +295,12 @@ else()
+   message(STATUS "   ATLAS_FOUND = ${ATLAS_FOUND}"   )
+   message(STATUS "    BLAS_FOUND = ${BLAS_FOUND}"    )
+   message(STATUS "  LAPACK_FOUND = ${LAPACK_FOUND}"  )
+-  
+-  if(MKL_FOUND OR ACMLMP_FOUND OR ACML_FOUND)
+-    
++
++  if((MKL_FOUND AND USE_MKL) OR (ACMLMP_FOUND AND USE_ACMLMP) OR (ACML_FOUND AND USE_ACML))
++
+     set(ARMA_USE_LAPACK true)
+     set(ARMA_USE_BLAS   true)
+-    
++
+     message(STATUS "")
+     message(STATUS "*** If the MKL or ACML libraries are installed in non-standard locations such as")
+     message(STATUS "*** /opt/intel/mkl, /opt/intel/composerxe/, /usr/local/intel/mkl")
+@@ -283,51 +312,51 @@ else()
+     message(STATUS "*** you may need to change the SELinux type of all MKL/ACML libraries")
+     message(STATUS "*** to fix permission problems that may occur during run-time.")
+     message(STATUS "")
+-    
+-    if(MKL_FOUND)
++
++    if(MKL_FOUND AND USE_MKL)
+       set(ARMA_LIBS ${ARMA_LIBS} ${MKL_LIBRARIES})
+-      
+-      if(ACMLMP_FOUND OR ACML_FOUND)
++
++      if((ACMLMP_FOUND AND USE_ACMLMP) OR (ACML_FOUND AND USE_ACML))
+         message(STATUS "*** Intel MKL as well as AMD ACML libraries were found.")
+         message(STATUS "*** Using only the MKL library to avoid linking conflicts.")
+         message(STATUS "*** If you wish to use ACML instead, please link manually with")
+         message(STATUS "*** acml or acml_mp instead of the armadillo wrapper library.")
+         message(STATUS "*** Alternatively, remove MKL from your system and rerun")
+-        message(STATUS "*** Armadillo's configuration using ./configure") 
++        message(STATUS "*** Armadillo's configuration using ./configure")
+       endif()
+-      
++
+     else()
+-      
+-      if(ACMLMP_FOUND)
++
++      if(ACMLMP_FOUND AND USE_ACMLMP)
+         set(ARMA_LIBS ${ARMA_LIBS} ${ACMLMP_LIBRARIES})
+-        
++
+         message(STATUS "*** Both single-core and multi-core ACML libraries were found.")
+         message(STATUS "*** Using only the multi-core library to avoid linking conflicts.")
+       else()
+-        if(ACML_FOUND)
++        if(ACML_FOUND AND USE_ACML)
+           set(ARMA_LIBS ${ARMA_LIBS} ${ACML_LIBRARIES})
+         endif()
+       endif()
+-      
++
+     endif()
+-    
++
+   else()
+-    
+-    if(OpenBLAS_FOUND AND ATLAS_FOUND)
++
++    if((OpenBLAS_FOUND AND USE_OpenBLAS) AND (ATLAS_FOUND AND USE_ATLAS))
+       message(STATUS "")
+       message(STATUS "*** WARNING: found both OpenBLAS and ATLAS; ATLAS will not be used")
+     endif()
+-    
+-    if(OpenBLAS_FOUND AND BLAS_FOUND)
++
++    if((OpenBLAS_FOUND AND USE_OpenBLAS) AND (BLAS_FOUND AND USE_BLAS))
+       message(STATUS "")
+       message(STATUS "*** WARNING: found both OpenBLAS and BLAS; BLAS will not be used")
+     endif()
+-    
+-    if(OpenBLAS_FOUND)
+-      
++
++    if((OpenBLAS_FOUND AND USE_OpenBLAS))
++
+       set(ARMA_USE_BLAS true)
+       set(ARMA_LIBS ${ARMA_LIBS} ${OpenBLAS_LIBRARIES})
+-      
++
+       message(STATUS "")
+       message(STATUS "*** If the OpenBLAS library is installed in")
+       message(STATUS "*** /usr/local/lib or /usr/local/lib64")
+@@ -335,31 +364,31 @@ else()
+       message(STATUS "*** On Linux systems this can be done by editing /etc/ld.so.conf")
+       message(STATUS "*** or modifying the LD_LIBRARY_PATH environment variable.")
+       message(STATUS "")
+-      
++
+     else()
+-      
+-      if(ATLAS_FOUND)
++
++      if(ATLAS_FOUND AND USE_ATLAS)
+         set(ARMA_USE_ATLAS true)
+         set(ARMA_ATLAS_INCLUDE_DIR ${ATLAS_INCLUDE_DIR})
+         set(ARMA_LIBS ${ARMA_LIBS} ${ATLAS_LIBRARIES})
+-        
++
+         message(STATUS "ATLAS_INCLUDE_DIR = ${ATLAS_INCLUDE_DIR}")
+       endif()
+-      
+-      if(BLAS_FOUND)
++
++      if(BLAS_FOUND AND USE_BLAS)
+         set(ARMA_USE_BLAS true)
+         set(ARMA_LIBS ${ARMA_LIBS} ${BLAS_LIBRARIES})
+       endif()
+-      
++
+     endif()
+-    
+-    if(LAPACK_FOUND)
++
++    if(LAPACK_FOUND AND USE_LAPACK)
+       set(ARMA_USE_LAPACK true)
+       set(ARMA_LIBS ${ARMA_LIBS} ${LAPACK_LIBRARIES})
+     endif()
+-      
++
+   endif()
+-  
++
+ endif()
+ 
+ 
+@@ -392,7 +421,7 @@ if(DETECT_HDF5)
+       endif()
+     endif()
+   endif()
+- 
++
+   message(STATUS "HDF5_FOUND = ${HDF5_FOUND}")
+   if(HDF5_FOUND)
+     set(ARMA_USE_HDF5_ALT true)
+@@ -451,7 +480,7 @@ if(DEFINED CMAKE_CXX_COMPILER_ID AND DEFINED CMAKE_CXX_COMPILER_VERSION)
+     message(STATUS "Detected gcc 4.8.3 or later. Added '-std=c++11' to compiler flags")
+   else()
+     if(NOT (${CMAKE_MAJOR_VERSION} LESS 3))
+-      
++
+       if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS 6.0)
+         set(ARMA_USE_EXTERN_CXX11_RNG true)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+@@ -461,7 +490,7 @@ if(DEFINED CMAKE_CXX_COMPILER_ID AND DEFINED CMAKE_CXX_COMPILER_VERSION)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+         message(STATUS "Detected AppleClang 8.0 or later. Added '-std=c++14' to compiler flags")
+       endif()
+-      
++
+     endif()
+   endif()
+ endif()
+@@ -557,7 +586,7 @@ install(TARGETS armadillo EXPORT ArmadilloLibraryDepends
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+-  
++
+ # Export the package for use from the build-tree
+ # (this registers the build-tree with a global CMake-registry)
+ export(PACKAGE armadillo)
